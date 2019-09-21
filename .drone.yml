@@ -1,20 +1,23 @@
+kind: pipeline
+name: drone-lambda-plugin
+
 workspace:
   base: /go
   path: src/github.com/scnace/drone-lambda-plugin
 
-pipeline:
-  build:
+steps:
+  - name: build
     image: golang:1.13
     environment:
     commands:
       - go test ./...
       - go install
 
-  docker:
+  - name: push_dockerhub
     image: plugins/docker
     settings:
       repo: scnace/drone-lambda-plugin
-      autotag: true
+      auto_tag: true
       username:
         from_secret: DOCKERHUB_USER
       password:
