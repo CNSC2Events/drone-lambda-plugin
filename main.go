@@ -20,16 +20,16 @@ func main() {
 			Err(errors.New("env: aws region is required")).
 			Send()
 	}
-	key, id := os.Getenv("PLUGIN_AWS_SECRET_ACCESS_KEY"),
+	secret, id := os.Getenv("PLUGIN_AWS_SECRET_ACCESS_KEY"),
 		os.Getenv("PLUGIN_AWS_ACCESS_KEY_ID")
-	if key == "" || id == "" {
+	if secret == "" || id == "" {
 		log.Fatal().
 			Err(errors.New("auth: aws Credentials Key or ID is not provieded")).
 			Send()
 	}
 	svc := lambda.New(session.New(&aws.Config{
 		Region:      aws.String(region),
-		Credentials: credentials.NewStaticCredentials(key, id, ""),
+		Credentials: credentials.NewStaticCredentials(id, secret, ""),
 	}))
 
 	input := &lambda.UpdateFunctionCodeInput{
