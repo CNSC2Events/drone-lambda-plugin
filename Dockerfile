@@ -1,4 +1,15 @@
+FROM golang:1.13.0-alpine AS BUILDER
+
+WORKDIR /builder
+
+ADD main.go /builder
+
+RUN go build -o main main.go
+
+
 FROM alpine
+
+WORKDIR /bin
 
 RUN apk update && \
     apk add \
@@ -7,9 +18,7 @@ RUN apk update && \
 
 ENV AWS_SDK_LOAD_CONFIG=true
 
-RUN pwd
-
-ADD main /bin/
+COPY --from=BUILDER /builder/main /bin/main
 
 ENTRYPOINT ["/bin/main"]
 

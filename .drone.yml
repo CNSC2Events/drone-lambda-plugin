@@ -1,18 +1,27 @@
 workspace:
   base: /go
-  path: src/github.com/omerxx/drone-lambda-plugin
+  path: src/github.com/scnace/drone-lambda-plugin
 
 pipeline:
   build:
-    image: golang:1.9
+    image: golang:1.13
     environment:
-      - CGO_ENABLED=0
     commands:
-      - go get ./...
-      - go build main.go
+      - go test ./...
+      - go install
 
   docker:
     image: plugins/docker
-    repo: omerxx/drone-lambda-plugin
-    tags: latest
-    secrets: [ docker_username, docker_password, docker_email ]
+    settings:
+      repo: scnace/drone-lambda-plugin
+      autotag: true
+      username:
+        from_secret: DOCKERHUB_USER
+      password:
+        from_secret: DOCKERHUB_PASSWORD
+      dockerfile: Dockerfile
+    when:
+      event:
+      - push
+      branch:
+      - master

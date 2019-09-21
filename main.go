@@ -1,51 +1,49 @@
 package main
 
 import (
-    "fmt"
-    "os"
-    "github.com/aws/aws-sdk-go/service/lambda"
-    "github.com/aws/aws-sdk-go/aws/session"
-    "github.com/aws/aws-sdk-go/aws/awserr"
-    "github.com/aws/aws-sdk-go/aws"
+	"errors"
+	"fmt"
+	"os"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/lambda"
+
+	"github.com/rs/zerolog/log"
 )
 
-
 func main() {
-    svc := lambda.New(session.New(&aws.Config{
-        Region: aws.String("us-east-1"),
-    }))
+	region := os.Getenv("PLUGIN_REGION")
+	if region == "" {
+		log.Fatal().Err(errors.New("env: aws region is required"))
+	}
+	svc := lambda.New(session.New(&aws.Config{
+		Region: aws.String(region),
+	}))
 
-    input := &lambda.UpdateFunctionCodeInput{
-        FunctionName:    aws.String(os.Getenv("PLUGIN_FUNCTION_NAME")),
-        Publish:         aws.Bool(true),
-        S3Bucket:        aws.String(os.Getenv("PLUGIN_S3_BUCKET")),
-        S3Key:           aws.String(os.Getenv("PLUGIN_FILE_NAME")),
-    }
+	input := &lambda.UpdateFunctionCodeInput{
+		FunctionName: aws.String(os.Getenv("PLUGIN_FUNCTION_NAME")),
+		Publish:      aws.Bool(true),
+		S3Bucket:     aws.String(os.Getenv("PLUGIN_S3_BUCKET")),
+		S3Key:        aws.String(os.Getenv("PLUGIN_FILE_NAME")),
+	}
 
-    result, err := svc.UpdateFunctionCode(input)
-    if err != nil {
-        if aerr, ok := err.(awserr.Error); ok {
-            switch aerr.Code() {
-                case lambda.ErrCodeServiceException:
-                    fmt.Println(lambda.ErrCodeServiceException, aerr.Error())
-                case lambda.ErrCodeResourceNotFoundException:
-                    fmt.Println(lambda.ErrCodeResourceNotFoundException, aerr.Error())
-                case lambda.ErrCodeInvalidParameterValueException:
-                    fmt.Println(lambda.ErrCodeInvalidParameterValueException, aerr.Error())
-                case lambda.ErrCodeTooManyRequestsException:
-                    fmt.Println(lambda.ErrCodeTooManyRequestsException, aerr.Error())
-                case lambda.ErrCodeCodeStorageExceededException:
-                    fmt.Println(lambda.ErrCodeCodeStorageExceededException, aerr.Error())
-                default:
-                    fmt.Println(aerr.Error())
-            }
-        } else {
-            // Print the error, cast err to awserr.Error to get the Code and
-            // Message from an error.
-            fmt.Println(err.Error())
-        }
-        os.Exit(1)
-    }
+	result, err := svc.UpdateFunctionCode(input)
+	if err == nil {
+		log.Info().Msgf("[Deploy Success]: %s", result.GoString())
+		return
+	}
+	e, ok := err.(awserr.Error)
+	if !ok {
+		log.Fatal().Err(fmt.Errorf("deploy failed: %q", err))
+	}
 
-    fmt.Println(result)
+	awsErrField := map[string]interface{}{
+		e.Code():    e.Message(),
+		"originErr": e.OrigErr(),
+	}
+
+	log.Fatal().Fields(awsErrField).Send()
+
 }
