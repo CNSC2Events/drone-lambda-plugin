@@ -2,7 +2,7 @@ FROM golang:1.13.0-alpine AS BUILDER
 
 WORKDIR /builder
 
-ADD main.go /builder
+ADD . /builder
 
 RUN go build -o main main.go
 
