@@ -16,8 +16,6 @@ RUN apk update && \
     ca-certificates && \
     rm -rf /var/cache/apk/*
 
-ENV AWS_SDK_LOAD_CONFIG=true
-
 COPY --from=BUILDER /builder/main /bin/main
 
 ENTRYPOINT ["/bin/main"]
