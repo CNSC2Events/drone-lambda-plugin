@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/rs/zerolog/log"
@@ -15,10 +16,20 @@ import (
 func main() {
 	region := os.Getenv("PLUGIN_REGION")
 	if region == "" {
-		log.Fatal().Err(errors.New("env: aws region is required"))
+		log.Fatal().
+			Err(errors.New("env: aws region is required")).
+			Send()
+	}
+	key, id := os.Getenv("PLUGIN_AWS_SECRET_ACCESS_KEY"),
+		os.Getenv("PLUGIN_AWS_ACCESS_KEY_ID")
+	if key == "" || id == "" {
+		log.Fatal().
+			Err(errors.New("auth: aws Credentials Key or ID is not provieded")).
+			Send()
 	}
 	svc := lambda.New(session.New(&aws.Config{
-		Region: aws.String(region),
+		Region:      aws.String(region),
+		Credentials: credentials.NewStaticCredentials(key, id, ""),
 	}))
 
 	input := &lambda.UpdateFunctionCodeInput{
